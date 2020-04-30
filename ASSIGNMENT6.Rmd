@@ -1,0 +1,96 @@
+####################################################
+# Author: Paul Sanders                             #
+# Course: Management of Financial Institutions     #
+# Assign: Assignment 6                             #
+# Date  : Monday, November 25st, 2019              #
+####################################################
+
+library(tseries)
+library(readr)
+library(haven)
+library(dplyr)
+library(tidyverse) 
+library(timetk)
+library(highcharter)
+library(ggplot2)
+library(readxl)
+library(corrr)
+library(scales)
+library(plotly)
+library(lubridate)
+library(janitor)
+
+####################################################
+# part 1: import data                              #
+####################################################
+
+DSF <- read_csv(
+  "DATASETS/DSF_WRANGLED.csv",
+  col_types=cols(
+    PERMNO = col_double(),
+    CUSIP  = col_character(),
+    PRC    = col_double(),
+    RET    = col_double(),
+    SHROUT = col_double(),
+    YEAR   = col_double()
+    )
+  ) %>%
+  
+  clean_names() %>%
+  
+  mutate(prc = abs(prc)) %>%
+  
+  mutate(shrout = shrout * 1000) %>%
+  
+  mutate(E = prc * shrout)
+
+FUNDA <- read_csv(
+  "DATASETS/FUNDA_WRANGLED.csv",
+  col_types=cols(
+    FYEAR  = col_double(),
+    ACT    = col_double(),
+    CH     = col_double(),
+    CUSIP  = col_character(),
+    DLC    = col_double(),
+    DLTT   = col_double(),
+    IVST   = col_double(),
+    LCT    = col_double(),
+    OIADP  = col_double(),
+    RECT   = col_double(),
+    TEQ    = col_double(),
+    XINT   = col_double()
+    )
+  ) %>%
+  
+  clean_names() %>%
+  
+  mutate(act = act * 1000000) %>%
+  
+  mutate(ch  = ch  * 1000000) %>%
+  
+  mutate(dlc = dlc * 1000000) %>%
+  
+  mutate(dltt = dltt * 1000000) %>%
+  
+  mutate(ivst = ivst * 1000000) %>%
+  
+  mutate(lct  = lct  * 1000000) %>%
+  
+  mutate(oiadp = oiadp * 1000000) %>%
+  
+  mutate(rect = rect * 1000000) %>%
+  
+  mutate(teq  = teq * 1000000) %>%
+  
+  mutate(xint = xint * 1000000) %>%
+  
+  mutate(F = dlc + 0.5 * dltt)
+  
+BANKRUPT <- read_dta(
+  "DATASETS/BR1962_2016.dta") %>%
+  
+  clean_names() %>%
+  
+  mutate(year = year(bankruptcy_dt)) %>%
+  
+  select(everything(), -bankruptcy_dt)
