@@ -67,17 +67,16 @@ As can be seen, the majority of defaults lie in decile 1 and 2, which is a great
 
 The following statistcs were obtained on the out-of-sample testing:
 
-| --- | Predicted: Bankruptcy | Predicted: No Bankruptcy | Ratio |
-| Actual: Bankruptcy	| 0.10961 |	0.12776 | 0.0495 |
-| Actual: No Bankruptcy	| 0.10961 |	0.12776 | 0.0596 |
-| Ratios                | 0.456   | 0.3456  | 0.2345 |
+| --- | Predicted: Bankruptcy | Predicted: No Bankruptcy |
+| Actual: Bankruptcy	| 22 |	16 | 
+| Actual: No Bankruptcy	| 10 |	4950 |
 
 Graphically, we can plot the ROC curve as:
 
 <p align="center">
-  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment5/master/images/3graph.png">
+  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/outSample.png">
 </p>
 
-We can calculate the AUC and KS statistics as: AUC = 0.234, and KS = 1.34.
+We can calculate the AUC and KS statistics as: AUC = 0.883, and KS = 0.687.
 
-This implies our model is generally very good at predicting default for out-of-sample testing!
+This implies our model is generally good at predicting default for out-of-sample testing!
