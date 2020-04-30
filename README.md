@@ -29,6 +29,7 @@ In actually scraping and extracting the data, the SAS Software was used in order
 Several variables were used in the analysis as possible indicators of default. They include:
 
 - Leverage : the ratio of a firm's book value of debt to equity. This was chosen because it determines the default boundary and a higher leverage is expected to result in a higher (+) likelihood of default.
+- Probability of Default : this probability represents the likelihood of a firm defaulting and was calculated by representing the market capitalization as a call option on the firm's assets in the Black-Scholes framework. This was chosen because it closely tracks the actual likelihood of default, and a higher probability of default is expected to result in a higher (+) likelihood of default.
 - Current Ratio : the ratio of the current assets to current liabilities. This ratio determines a firm's ability to pay short-term loan obligations and a higher current ratio is expected to result in a lower (-) likelihood of default.
 - Volatilty of Asset Price : the volatilty in asset price over the previous year. This was chosen because a higher volatility in asset price leads to a higher (+) likelihood exists of ending in default.
 - Volatilty of Share Price : the volatilty in the market price of equity. This was chosen because in general market volatility follows periods of economic instability and uncertainty, which would lead to a higher (+) likelihood of default.
