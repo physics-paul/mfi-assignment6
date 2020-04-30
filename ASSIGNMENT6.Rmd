@@ -1,13 +1,14 @@
-####################################################
-# Author: Paul Sanders                             #
-# Course: Management of Financial Institutions     #
-# Assign: Assignment 6                             #
-# Date  : Monday, November 25st, 2019              #
-####################################################
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# 6.0 import modules
+
+```{r import modules, message = FALSE, warning = FALSE}
 
 library(tseries)
 library(readr)
-library(haven)
 library(dplyr)
 library(tidyverse) 
 library(timetk)
@@ -19,78 +20,282 @@ library(scales)
 library(plotly)
 library(lubridate)
 library(janitor)
+library(tidyverse)
+library(plotly)
+library(tidyquant)
+library(here)
+library(DataExplorer)
+library(rootSolve)
+library(haven)
+library(caret)
 
-####################################################
-# part 1: import data                              #
-####################################################
+```
 
-DSF <- read_csv(
-  "DATASETS/DSF_WRANGLED.csv",
-  col_types=cols(
-    PERMNO = col_double(),
-    CUSIP  = col_character(),
-    PRC    = col_double(),
-    RET    = col_double(),
-    SHROUT = col_double(),
-    YEAR   = col_double()
-    )
-  ) %>%
-  
-  clean_names() %>%
-  
-  mutate(prc = abs(prc)) %>%
-  
-  mutate(shrout = shrout * 1000) %>%
-  
-  mutate(E = prc * shrout)
+# 6.1 get imported data
 
-FUNDA <- read_csv(
-  "DATASETS/FUNDA_WRANGLED.csv",
-  col_types=cols(
-    FYEAR  = col_double(),
-    ACT    = col_double(),
-    CH     = col_double(),
-    CUSIP  = col_character(),
-    DLC    = col_double(),
-    DLTT   = col_double(),
-    IVST   = col_double(),
-    LCT    = col_double(),
-    OIADP  = col_double(),
-    RECT   = col_double(),
-    TEQ    = col_double(),
-    XINT   = col_double()
-    )
-  ) %>%
-  
+```{r import data}
+
+dsfFunda <- read_csv("dsf_funda.csv", 
+        col_types = cols(SamplingWeight = col_skip(), 
+         SelectionProb = col_skip()))
+
+dsfFunda <- dsfFunda %>%
   clean_names() %>%
-  
-  mutate(act = act * 1000000) %>%
-  
-  mutate(ch  = ch  * 1000000) %>%
-  
-  mutate(dlc = dlc * 1000000) %>%
-  
-  mutate(dltt = dltt * 1000000) %>%
-  
-  mutate(ivst = ivst * 1000000) %>%
-  
-  mutate(lct  = lct  * 1000000) %>%
-  
-  mutate(oiadp = oiadp * 1000000) %>%
-  
-  mutate(rect = rect * 1000000) %>%
-  
-  mutate(teq  = teq * 1000000) %>%
-  
-  mutate(xint = xint * 1000000) %>%
-  
-  mutate(F = dlc + 0.5 * dltt)
-  
-BANKRUPT <- read_dta(
-  "DATASETS/BR1962_2016.dta") %>%
-  
+  drop_na()
+
+```
+
+```{r import bankruptcy data}
+
+bnkrpt <- read_dta("BR1964_2016.dta") %>%
   clean_names() %>%
-  
   mutate(year = year(bankruptcy_dt)) %>%
+  select(everything(), -bankruptcy_dt) %>%
+  add_column(bkrpt = 1)
+
+dsfFunda <- merge(dsfFunda,bnkrpt, all.x = TRUE)
+dsfFunda[is.na(dsfFunda)] <- 0
+
+```
+
+```{r import risk-free rate}
+
+# grab the risk-free rate
+
+riskFreeRate <- read_csv("DAILYFED.csv", na = ".")
+
+riskFreeRate <- riskFreeRate %>%
+  clean_names() %>%
+  drop_na() %>%
+  mutate(
+    r = log(1+dtb3/100),
+    year = year(date)
+  )
   
-  select(everything(), -bankruptcy_dt)
+riskFreeRate <- riskFreeRate[3:4] 
+
+riskFreeRate <- riskFreeRate %>% group_by(year) %>% summarize(r = first(r))
+
+# merge the risk-free rate with the dsf dataset
+
+dsfFundaWithRiskFree <- merge(dsfFunda, riskFreeRate)
+
+# create the risk-free variable
+
+R <- dsfFundaWithRiskFree[7]
+
+```
+
+```{r import moodys spread data}
+
+spread <- read_csv("BAAFFM.csv") %>%
+  clean_names() %>%
+  mutate(year = year(date)) %>%
+  group_by(year) %>%
+  summarize(baaffm = first(baaffm))
+
+dsfFundaWithSpread <- merge(dsfFundaWithRiskFree, spread)
+
+```
+
+# 6.2 calculate probability to default
+
+```{r import variables}
+
+T = 1
+years <- dsfFundaWithSpread[1]
+permno <- dsfFundaWithSpread[2]
+sigmaE <- dsfFundaWithSpread[3]
+E <- dsfFundaWithSpread[4]
+F <- dsfFundaWithSpread[5]
+
+```
+
+```{r calculate V and sigmaV using the Direct Method}
+
+# create a function to calculae v and sigmav
+
+fn <- function(x, parms) {
+  
+  r <- as.numeric(parms[1])
+  f <- as.numeric(parms[2])
+  t <- as.numeric(parms[3])
+  e <- as.numeric(parms[4])
+  sigmae <- as.numeric(parms[5])
+  
+  v <- as.numeric(x[1])
+  sigmav <- as.numeric(x[2])
+  
+  d1 <- (log(v/f) + (r + sigmav^2 / 2) * t) / (sigmav * sqrt(t))
+  d2 <- d1 - sigmav * sqrt(t)
+  
+  s1 <- v * pnorm(d1) - f * exp(-r*t) * pnorm(d2) - e
+  s2 <- v / e * pnorm(d1) * sigmav - sigmae
+  
+  return(c(s1,s2))
+}
+
+# iterate through the list of firms for each year
+
+V = array(dim=lengths(E))
+sigmaV <- array(dim=lengths(E))
+
+for (i in 1:lengths(E)) {
+  
+  sigmae <- as.numeric(sigmaE[i,1])
+  e <- as.numeric(E[i,1])
+  f <- as.numeric(F[i,1])
+  r <- as.numeric(R[i,1])
+  
+  parms <- c(r, f, T, e, sigmae)
+
+  x0 <- c((e + f), sigmae * e /(e + f) )
+
+  (ss <- multiroot(fn, x0, parms=parms))
+
+  V[i] <- ss$root[1]
+  sigmaV[i] <- ss$root[2]
+
+}
+
+```
+
+```{r calculate DD and PD using the Direct Method}
+
+# calcualte dd and pd
+
+ddDirect <- (log(V / F) + (r - sigmaV^2 / 2) * T) / (sigmaV*sqrt(T))
+
+pdDirect <- 1 - pnorm(ddDirect[,1])
+
+# bind this to the year to get descriptive statistics
+
+ddDirect <- cbind(years,permno,ddDirect,sigmaV)
+pdDirect <- cbind(years,permno,pdDirect,sigmaV)
+
+# rename the columns
+
+names(ddDirect)[3] = 'dddirect'
+names(pdDirect)[3] = 'pddirect'
+
+# delete and rows with 'na' values
+
+ddDirect <- ddDirect %>% drop_na()
+pdDirect <- pdDirect %>% drop_na()
+
+dsfFundaWithSpread <- merge(dsfFundaWithSpread, pdDirect, all.x = TRUE)
+
+```
+
+# 6.4 calculate other explanatory variables
+
+```{r calculate leverage}
+
+dsfFundaWithSpread <- cbind(dsfFundaWithSpread, leverage = array(F / E))
+
+```
+
+# 6.5 merge the complete dataset
+
+```{r join dataset}
+
+bankrupt <- dsfFundaWithSpread %>%
+  select(bkrpt, leverage, pddirect, quick, sigmaV, stdev, baaffm) %>% drop_na()
+
+```
+
+# 6.6 regression analysis in-sample
+
+```{r logistic regression}
+
+logModel <- glm(bkrpt ~ leverage + pddirect + quick + sigmaV + stdev + baaffm, data=bankrupt, family="binomial")
+
+summary(logModel)
+
+```
+
+#  6.7 regression analysis out-of-sample
+
+```{r rolling window out-of sample analysis}
+
+predictionAll <- data.frame(act=double(), pre=double())
+
+for (yr in 1991:2015) {
+  
+  # divide the set into training and testing
+  
+  trainingSet = bankrupt[(yr-30<=dsfFundaWithSpread$year) & (dsfFundaWithSpread$year<yr),]
+  testingSet = bankrupt[dsfFundaWithSpread$year == yr,]
+  
+  # run the regression model
+  
+  logModel <- glm(bkrpt ~ leverage + pddirect + quick + sigmaV + stdev + baaffm, data=bankrupt, family="binomial")
+  
+  # predict out-of-sample performance
+  
+  predictionYear <- predict(logModel, newdata = testingSet, type = "response")
+  
+  predictionYear <- cbind(act = testingSet$bkrpt, pre = predictionYear)
+  
+  predictionAll <- rbind(predictionAll, predictionYear)
+  
+}
+
+```
+
+#  6.8 analysis of results
+
+```{r separating the results into deciles}
+
+predictionAll$decile <- ntile(-predictionAll$pre,10)
+
+# decile performance
+
+decilePerformance <- predictionAll[predictionAll$act == 1,] %>% group_by(decile) %>% summarise(n = n())
+
+```
+
+```{r confusion matrix}
+
+predictionAll <- predictionAll %>% 
+  mutate(act = factor(act),
+         bankrupt_predicted = case_when(pre >= .25 ~ 1, 
+                                  TRUE ~ 0) %>% factor())
+
+confMat <- predictionAll %>% select(act, bankrupt_predicted)
+
+confMat %>% conf_mat(act, bankrupt_predicted) %>%
+  pluck(1) %>%
+  as_tibble() %>%
+  ggplot(aes(Prediction, Truth, alpha = n)) +
+  geom_tile(fill = "blue", show.legend = FALSE) +
+  geom_text(aes(label = n), colour = "white", alpha = 1, size = 8)
+
+```
+
+```{r roc curve}
+
+roc_curve(predictionAll, act, pre) %>%
+  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
+  geom_path(color = "cornflowerblue") +
+  geom_abline(lty = 3) +
+  coord_equal() +
+  theme_bw()
+
+```
+
+```{r auc and ks statistics}
+
+# auc statistics
+
+p <- prediction(predictionAll$pre, predictionAll$act)
+
+auc <- performance(p,'auc')
+auc <- unlist(slot(auc, "y.values"))
+
+# ks statistics
+
+perf <- performance(p, "tpr", "fpr")
+ks <- max(attr(perf, "y.values")[[1]] - (attr(perf, "x.values")[[1]]))
+
+```
