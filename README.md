@@ -16,7 +16,7 @@ a. DSF : The daily stock returns and volume, along with shares outstanding, were
 
 b. FUNDA : This company-specific data information file contained information on the outstanding debt held by each company and the link between CUSIP and the CIK number. Additionally, variables such as cash on hand and debt outstanding were used as explanatory variables in predicting default. 
   
-c. distanceToDefault : This data file, calculated in the previous assignment, was used as an explanatory variable to calculate the likelihood of default. It contains the distance to default for each year for a randomly selected group of 200 firms each year.
+c. Distance to Default : This data file, calculated in the previous assignment, was used as an explanatory variable to calculate the likelihood of default. It contains the distance to default for each year for a randomly selected group of 200 firms each year.
 
 d. Moody's BAA-Fed Fund Spread : This data file contains the spread between BAA Corporate Bond yields and the Fed Funds rate. When in a recessionary period, this spread tends to be high, because the BAA Corporate Bond yields are closely linked to the probability of default for firms in this same riskiness level. This spread was used as an explanatory variable. The link is here: [Moody's BAA-Fed Fund Spread](https://fred.stlouisfed.org/series/BAAFFM).
 
