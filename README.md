@@ -41,36 +41,27 @@ These variables were pre-processed and scaled accordingly to allow for a quicker
 
 The logistic regression was performing using the R Statistical software over the training set of 1962-2015 yearly data. The data was lagged appropriately, so predictive variables from the previous year were used on the next year's data. Upon performing the regression, we obtained the following statistics on the in-sample testing:
 
-| --- | Predicted: Bankruptcy | Predicted: No Bankruptcy | Ratio |
-| Actual: Bankruptcy	| 0.10961 |	0.12776 | 0.0495 |
-| Actual: No Bankruptcy	| 0.10961 |	0.12776 | 0.0596 |
-| Ratios                | 0.456   | 0.3456  | 0.2345 |
-
-Graphically, we can plot the ROC curve as:
-
 <p align="center">
-  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment5/master/images/3graph.png">
+  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/inSample.png">
 </p>
 
-We can calculate the AUC and KS statistics as: AUC = 0.234, and KS = 1.34.
-
-This implies our model is generally very good at predicting default for in-sample testing!
+As we see, the probability of default, the quick ratio, the standard deviation of the asset value, and the standard deviation of the market capitalization are signifcant variables in the model. Srangely enough, the leverage is not a significant statistic, because the p score is higher than 0.05, which is puzzling.
 
 ### 4. Performing the Logistic Regression on Out-Of-Sample Testing
 
 In contrast to the in-sample testing, the logistic regression was performed rolling window basis, in order to predict the out-of-sample default. This means, for instance, forcasting for 1991 was done with 1962-1990 yearly data, and forcasting for 1992 was done with 1963-1991 yearly data, etc. The data in the training set was lagged appropriately, so predictive variables from the previous year were used on the next year's data in generating the regression. Upon performing the regression, the default probabilities over the range 1991-2016 were ranked into deciles. The number (and percentage of defaults) in each of these groups is given in the following chart:
 
 | --- | Number of Defaults | Percentage of Defaults |
-| 1  | 100 | 0.50 |
-| 2  | 80 | 0.20 |
-| 3  | 20 | 0.15 |
-| 4  | 10 | 0.10 |
-| 5  | 5 | 0.05 |
-| 6  | 1 | 0.00 |
-| 7  | 1 | 0.00 |
-| 8  | 1 | 0.00 |
+| 1  | 28 | 0.056 |
+| 2  | 2 | 0.004 |
+| 3  | 3 | 0.006 |
+| 4  | 1 | 0.002 |
+| 5  | 1 | 0.002 |
+| 6  | 0 | 0.000|
+| 7  | 1 | 0.002 |
+| 8  | 0 | 0.00 |
 | 9  | 0 | 0.00 |
-| 10 | 0 | 0.00 |
+| 10 | 2 | 0.004 |
 
 As can be seen, the majority of defaults lie in decile 1 and 2, which is a great sign!
 
