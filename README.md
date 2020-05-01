@@ -42,7 +42,7 @@ These variables were pre-processed and scaled accordingly to allow for a quicker
 The logistic regression was performing using the R Statistical software over the training set of 1962-2015 yearly data. The data was lagged appropriately, so predictive variables from the previous year were used on the next year's data. Upon performing the regression, we obtained the following statistics on the in-sample testing:
 
 <p align="center">
-  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/inSample.png">
+  <img height='400' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/inSample.png">
 </p>
 
 As we see, the probability of default, the quick ratio, the standard deviation of the asset value, and the standard deviation of the market capitalization are signifcant variables in the model. Srangely enough, the leverage is not a significant statistic, because the p score is higher than 0.05, which is puzzling.
@@ -74,7 +74,7 @@ The following statistcs were obtained on the out-of-sample testing:
 Graphically, we can plot the ROC curve as:
 
 <p align="center">
-  <img height='60' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/outSample.png">
+  <img height='400' src="https://raw.githubusercontent.com/physics-paul/mfi-assignment6/master/outSample.png">
 </p>
 
 We can calculate the AUC and KS statistics as: AUC = 0.883, and KS = 0.687.
